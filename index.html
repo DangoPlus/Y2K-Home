@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CYBER_CORE // Y2K EST.1999</title>
+    
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 引入 Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- 引入字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=VT323&display=swap" rel="stylesheet">
+
+    <!-- 自定义样式 -->
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --chrome: #e0e0e0;
+            --bg-dark: #050505;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-dark);
+            color: var(--chrome);
+            font-family: 'Orbitron', sans-serif;
+            overflow-x: hidden;
+            cursor: crosshair;
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #000;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--neon-blue);
+            border-radius: 4px;
+        }
+
+        /* 背景网格 */
+        .bg-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: 
+                linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -2;
+            pointer-events: none;
+            perspective: 500px;
+            transform-style: preserve-3d;
+        }
+
+        /* 扫描线效果 */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* 3D 容器 */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.8;
+        }
+
+        /* 玻璃拟态卡片 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .glass-panel:hover {
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 25px rgba(0, 243, 255, 0.3);
+        }
+
+        /* 故障文字特效 */
+        .glitch-text {
+            position: relative;
+        }
+        .glitch-text::before,
+        .glitch-text::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+        }
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--neon-pink);
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-anim-2 3s infinite linear alternate-reverse;
+        }
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--neon-blue);
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-anim 2.5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip: rect(13px, 9999px, 81px, 0); }
+            20% { clip: rect(78px, 9999px, 13px, 0); }
+            40% { clip: rect(25px, 9999px, 5px, 0); }
+            60% { clip: rect(62px, 9999px, 83px, 0); }
+            80% { clip: rect(32px, 9999px, 6px, 0); }
+            100% { clip: rect(89px, 9999px, 44px, 0); }
+        }
+        @keyframes glitch-anim-2 {
+            0% { clip: rect(65px, 9999px, 100px, 0); }
+            20% { clip: rect(10px, 9999px, 33px, 0); }
+            40% { clip: rect(93px, 9999px, 55px, 0); }
+            60% { clip: rect(18px, 9999px, 72px, 0); }
+            80% { clip: rect(4px, 9999px, 91px, 0); }
+            100% { clip: rect(52px, 9999px, 20px, 0); }
+        }
+
+        /* 跑马灯 */
+        .marquee-container {
+            overflow: hidden;
+            white-space: nowrap;
+            background: var(--neon-blue);
+            color: #000;
+            font-family: 'VT323', monospace;
+            font-size: 1.5rem;
+            padding: 4px 0;
+            border-top: 2px solid white;
+            border-bottom: 2px solid white;
+        }
+        .marquee-content {
+            display: inline-block;
+            animation: marquee 20s linear infinite;
+        }
+        @keyframes marquee {
+            0% { transform: translateX(100%); }
+            100% { transform: translateX(-100%); }
+        }
+
+        /* 铬金文字 */
+        .chrome-title {
+            background: linear-gradient(to bottom, #fff 0%, #e0e0e0 40%, #888 50%, #fff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+        }
+
+        /* 像素字体辅助 */
+        .pixel-font {
+            font-family: 'VT323', monospace;
+        }
+
+        /* 加载动画层 */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 1s ease;
+        }
+        .loader-bar {
+            width: 300px;
+            height: 20px;
+            border: 2px solid var(--neon-blue);
+            padding: 2px;
+            margin-top: 20px;
+        }
+        .loader-progress {
+            width: 0%;
+            height: 100%;
+            background: var(--neon-blue);
+            transition: width 0.5s;
+            box-shadow: 0 0 10px var(--neon-blue);
+        }
+
+        /* 装饰性小元素 */
+        .deco-cross {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+        }
+        .deco-cross::before, .deco-cross::after {
+            content: '';
+            position: absolute;
+            background: var(--neon-pink);
+        }
+        .deco-cross::before { width: 100%; height: 2px; top: 9px; }
+        .deco-cross::after { width: 2px; height: 100%; left: 9px; }
+
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- 加载层 -->
+    <div id="loader">
+        <div class="text-4xl font-bold tracking-widest text-white mb-4 animate-pulse">SYSTEM BOOTING...</div>
+        <div class="pixel-font text-xl text-cyan-400">LOADING ASSETS_V.2.0</div>
+        <div class="loader-bar">
+            <div class="loader-progress" id="progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- 扫描线和背景 -->
+    <div class="scanlines"></div>
+    <div class="bg-grid"></div>
+    <div id="canvas-container"></div>
+
+    <!-- 顶部导航 -->
+    <header class="fixed top-0 w-full z-40 px-6 py-4 flex justify-between items-center border-b border-white/10 glass-panel rounded-b-2xl mx-4 mt-2" style="width: calc(100% - 2rem);">
+        <div class="flex items-center gap-2">
+            <div class="w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+            <span class="text-xl font-bold tracking-tighter">CYBER<span class="text-cyan-400">CORE</span></span>
+        </div>
+        <nav class="hidden md:flex gap-8 pixel-font text-xl">
+            <a href="#" class="hover:text-cyan-400 hover:underline decoration-2 underline-offset-4 transition-colors">DATA</a>
+            <a href="#" class="hover:text-cyan-400 hover:underline decoration-2 underline-offset-4 transition-colors">VISUALS</a>
+            <a href="#" class="hover:text-cyan-400 hover:underline decoration-2 underline-offset-4 transition-colors">SYSTEM</a>
+            <a href="#" class="hover:text-cyan-400 hover:underline decoration-2 underline-offset-4 transition-colors">CONNECT</a>
+        </nav>
+        <div class="pixel-font text-lg text-gray-400 border border-gray-600 px-2 rounded">
+            USER: GUEST_01
+        </div>
+    </header>
+
+    <!-- 主体内容 -->
+    <main class="relative z-10 pt-32 pb-20 px-4 md:px-12 max-w-7xl mx-auto">
+        
+        <!-- Hero Section -->
+        <section class="min-h-[80vh] flex flex-col justify-center relative">
+            
+            <div class="absolute top-0 right-0 p-4 border border-cyan-500/30 rounded text-right pixel-font text-sm hidden lg:block glass-panel">
+                <p>COORDS: 34.0522° N, 118.2437° W</p>
+                <p>STATUS: ONLINE</p>
+                <p>MEMORY: 64MB / 128MB</p>
+            </div>
+
+            <h2 class="pixel-font text-cyan-400 mb-2 tracking-widest text-xl">WELCOME TO THE NEW MILLENNIUM</h2>
+            
+            <h1 class="text-6xl md:text-8xl lg:text-9xl font-black leading-none mb-6 relative z-20">
+                <span class="block chrome-title glitch-text" data-text="DIGITAL">DIGITAL</span>
+                <span class="block text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-white to-pink-500 glitch-text pl-12" data-text="FANTASY">FANTASY</span>
+            </h1>
+
+            <p class="max-w-xl text-lg md:text-xl text-gray-300 mb-8 border-l-4 border-pink-500 pl-4 bg-black/40 p-4 backdrop-blur-sm">
+                进入网络空间的虚空。连接未来与过去的接口。体验纯粹的 Y2K 美学，在这里，数据即是生命，铬金即是灵魂。
+            </p>
+
+            <div class="flex gap-4">
+                <button class="px-8 py-3 bg-cyan-500/20 border border-cyan-400 text-cyan-400 font-bold hover:bg-cyan-400 hover:text-black transition-all duration-300 shadow-[0_0_15px_rgba(0,243,255,0.5)]">
+                    ENTER SYSTEM
+                </button>
+                <button class="px-8 py-3 bg-transparent border border-white/30 hover:border-pink-500 hover:text-pink-500 transition-all duration-300">
+                    DOWNLOAD_LOG
+                </button>
+            </div>
+
+            <!-- 装饰性元素 -->
+            <div class="deco-cross top-1/2 left-10 opacity-50"></div>
+            <div class="deco-cross bottom-20 right-20 opacity-50"></div>
+        </section>
+
+        <!-- Marquee Divider -->
+        <div class="my-20 -mx-4 md:-mx-12 transform -rotate-1">
+            <div class="marquee-container">
+                <div class="marquee-content">
+                    /// SYSTEM UPDATE COMPLETE /// AESTHETIC REVOLUTION /// LIQUID METAL INTERFACE /// NOSTALGIA FOR THE FUTURE /// 2000 /// 
+                    /// SYSTEM UPDATE COMPLETE /// AESTHETIC REVOLUTION /// LIQUID METAL INTERFACE /// NOSTALGIA FOR THE FUTURE /// 2000 ///
+                </div>
+            </div>
+        </div>
+
+        <!-- Grid Cards Section -->
+        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-20">
+            
+            <!-- Card 1 -->
+            <div class="glass-panel p-6 rounded-lg relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-2 text-xs pixel-font text-gray-500">REF_01</div>
+                <div class="h-40 bg-gradient-to-br from-purple-900 to-black mb-4 border border-white/10 flex items-center justify-center overflow-hidden">
+                    <div class="text-6xl group-hover:scale-125 transition-transform duration-500">💿</div>
+                </div>
+                <h3 class="text-2xl font-bold mb-2 text-cyan-300">HYPER_MEDIA</h3>
+                <p class="text-sm text-gray-400 pixel-font leading-relaxed">
+                    多媒体交互体验。从CD-ROM时代提取的记忆碎片，重构为高清数字流。
+                </p>
+                <div class="mt-4 flex justify-between items-center border-t border-white/10 pt-4">
+                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <button class="text-xs border border-white/30 px-2 py-1 hover:bg-white hover:text-black transition">READ >></button>
+                </div>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="glass-panel p-6 rounded-lg relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-2 text-xs pixel-font text-gray-500">REF_02</div>
+                <div class="h-40 bg-gradient-to-br from-blue-900 to-black mb-4 border border-white/10 flex items-center justify-center">
+                    <div class="text-6xl group-hover:rotate-12 transition-transform duration-500">🌐</div>
+                </div>
+                <h3 class="text-2xl font-bold mb-2 text-pink-300">WORLD_WIDE_WEB</h3>
+                <p class="text-sm text-gray-400 pixel-font leading-relaxed">
+                    全球互联网络节点可视化。在信息高速公路上冲浪，无需等待拨号音。
+                </p>
+                <div class="mt-4 flex justify-between items-center border-t border-white/10 pt-4">
+                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <button class="text-xs border border-white/30 px-2 py-1 hover:bg-white hover:text-black transition">READ >></button>
+                </div>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="glass-panel p-6 rounded-lg relative overflow-hidden group md:col-span-2 lg:col-span-1">
+                <div class="absolute top-0 right-0 p-2 text-xs pixel-font text-gray-500">REF_03</div>
+                <div class="h-40 bg-gradient-to-br from-cyan-900 to-black mb-4 border border-white/10 flex items-center justify-center">
+                    <div class="text-6xl group-hover:skew-x-12 transition-transform duration-500">👽</div>
+                </div>
+                <h3 class="text-2xl font-bold mb-2 text-white">ALIEN_TECH</h3>
+                <p class="text-sm text-gray-400 pixel-font leading-relaxed">
+                    来自未来的未知技术。逆向工程解码中...数据同步率 99.9%。
+                </p>
+                <div class="mt-4 flex justify-between items-center border-t border-white/10 pt-4">
+                    <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                    <button class="text-xs border border-white/30 px-2 py-1 hover:bg-white hover:text-black transition">READ >></button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Bottom Data Display -->
+        <section class="glass-panel p-8 rounded-xl border-t-4 border-t-cyan-400">
+            <div class="flex flex-col md:flex-row justify-between items-end gap-6">
+                <div>
+                    <h4 class="pixel-font text-gray-500 mb-2">TRANSFER RATE</h4>
+                    <div class="text-4xl md:text-6xl font-black font-mono text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500">
+                        56.6 KB/S
+                    </div>
+                </div>
+                <div class="w-full md:w-1/2">
+                    <div class="flex justify-between text-xs pixel-font mb-1 text-cyan-300">
+                        <span>UPLOAD</span>
+                        <span>100%</span>
+                    </div>
+                    <div class="w-full bg-gray-800 h-4 rounded-full overflow-hidden border border-gray-600">
+                        <div class="h-full bg-gradient-to-r from-cyan-500 to-blue-600 w-full animate-pulse"></div>
+                    </div>
+                    <div class="mt-2 text-xs text-right text-gray-500">PACKET LOSS: 0.00%</div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-white/10 bg-black/80 backdrop-blur text-center py-8 relative z-20">
+        <div class="max-w-7xl mx-auto px-4 flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <span class="font-bold text-2xl tracking-widest">Y2K</span>
+            </div>
+            <div class="pixel-font text-gray-500 text-sm">
+                COPYRIGHT © 1999-2099 CYBER_CORP INC. <br>
+                ALL RIGHTS RESERVED. DESIGNED FOR INTERNET EXPLORER 5.0
+            </div>
+            <div class="flex gap-4 mt-4 md:mt-0">
+                <div class="w-8 h-8 border border-gray-600 rounded flex items-center justify-center hover:bg-white hover:text-black cursor-pointer transition">IG</div>
+                <div class="w-8 h-8 border border-gray-600 rounded flex items-center justify-center hover:bg-white hover:text-black cursor-pointer transition">TW</div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 脚本逻辑 -->
+    <script>
+        // 加载动画模拟
+        window.onload = function() {
+            const progressBar = document.getElementById('progress-bar');
+            const loader = document.getElementById('loader');
+            
+            // 简单的加载进度动画
+            setTimeout(() => { progressBar.style.width = "40%"; }, 200);
+            setTimeout(() => { progressBar.style.width = "75%"; }, 800);
+            setTimeout(() => { 
+                progressBar.style.width = "100%"; 
+                setTimeout(() => {
+                    loader.style.opacity = "0";
+                    setTimeout(() => {
+                        loader.style.display = "none";
+                    }, 1000);
+                }, 500);
+            }, 1500);
+
+            initThreeJS();
+        };
+
+        // Three.js 背景动画
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            
+            // 场景设置
+            const scene = new THREE.Scene();
+            // 添加环境雾气以融合背景
+            scene.fog = new THREE.FogExp2(0x050505, 0.002);
+
+            // 摄像机
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 5;
+
+            // 渲染器
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // 创建核心物体：液态金属环结
+            const geometry = new THREE.TorusKnotGeometry(1.5, 0.4, 128, 32); // 更复杂的几何体
+            
+            // 材质：高光泽液态铬
+            const material = new THREE.MeshPhysicalMaterial({
+                color: 0xffffff,
+                metalness: 1,
+                roughness: 0.1,
+                clearcoat: 1.0,
+                clearcoatRoughness: 0.1,
+                reflectivity: 1
+            });
+
+            const torusKnot = new THREE.Mesh(geometry, material);
+            scene.add(torusKnot);
+
+            // 粒子系统 (背景漂浮物)
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 700;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 15; // 分布范围
+            }
+
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.02,
+                color: 0x00f3ff,
+                transparent: true,
+                opacity: 0.8
+            });
+
+            const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particlesMesh);
+
+
+            // 灯光
+            const ambientLight = new THREE.AmbientLight(0x404040, 2); // 柔和环境光
+            scene.add(ambientLight);
+
+            // 霓虹蓝光 - 左侧
+            const pointLight1 = new THREE.PointLight(0x00f3ff, 2, 50);
+            pointLight1.position.set(-5, 2, 5);
+            scene.add(pointLight1);
+
+            // 霓虹粉光 - 右侧
+            const pointLight2 = new THREE.PointLight(0xff00ff, 2, 50);
+            pointLight2.position.set(5, -2, 5);
+            scene.add(pointLight2);
+
+            // 交互：鼠标移动视差效果
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+
+            const windowHalfX = window.innerWidth / 2;
+            const windowHalfY = window.innerHeight / 2;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = (event.clientX - windowHalfX);
+                mouseY = (event.clientY - windowHalfY);
+            });
+
+            // 动画循环
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const elapsedTime = clock.getElapsedTime();
+
+                targetX = mouseX * 0.001;
+                targetY = mouseY * 0.001;
+
+                // 物体旋转
+                torusKnot.rotation.x += 0.005; // 持续自转
+                torusKnot.rotation.y += 0.005;
+
+                // 鼠标交互平滑过渡
+                torusKnot.rotation.y += 0.05 * (targetX - torusKnot.rotation.y);
+                torusKnot.rotation.x += 0.05 * (targetY - torusKnot.rotation.x);
+
+                // 粒子轻微浮动
+                particlesMesh.rotation.y = -elapsedTime * 0.05;
+                particlesMesh.rotation.x = elapsedTime * 0.02;
+
+                renderer.render(scene, camera);
+            }
+
+            animate();
+
+            // 窗口大小改变自适应
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        }
+    </script>
+</body>
+</html>
