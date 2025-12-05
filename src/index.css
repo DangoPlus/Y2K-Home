@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon-blue: #00f3ff;
+  --neon-pink: #ff00ff;
+  --chrome: #e0e0e0;
+  --bg-dark: #050505;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-dark);
+  color: var(--chrome);
+  font-family: 'Orbitron', sans-serif;
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* 滚动条美化 */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #000;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--neon-blue);
+  border-radius: 4px;
+}
+
+/* 扫描线效果 */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+      to bottom,
+      rgba(255,255,255,0),
+      rgba(255,255,255,0) 50%,
+      rgba(0,0,0,0.2) 50%,
+      rgba(0,0,0,0.2)
+  );
+  background-size: 100% 4px;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* 背景网格 */
+.bg-grid {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image:
+      linear-gradient(rgba(0, 243, 255, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 243, 255, 0.1) 1px, transparent 1px);
+  background-size: 50px 50px;
+  z-index: -2;
+  pointer-events: none;
+  perspective: 500px;
+  transform-style: preserve-3d;
+}
+
+/* 铬金文字 */
+.chrome-title {
+  background: linear-gradient(to bottom, #fff 0%, #e0e0e0 40%, #888 50%, #fff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 2px rgba(255,255,255,0.5));
+}
+
+@keyframes marquee {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation: marquee 20s linear infinite;
+}
